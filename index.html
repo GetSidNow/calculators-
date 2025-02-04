@@ -103,6 +103,12 @@
       font-size: 0.9rem;
       line-height: 1.4;
       animation: fadeIn 0.8s ease-in;
+      transition: border 0.3s ease, background-color 0.3s ease;
+    }
+    /* Highlighted results style */
+    .result.highlighted {
+      border: 2px solid #0038e0;
+      background: #1e1e1e;
     }
     .scenario {
       margin-bottom: 1rem;
@@ -237,19 +243,19 @@
         - Realistic Mode: New reviews are 9
     */
     document.getElementById('calculateBtn').addEventListener('click', function() {
-      // Trigger confetti effect
-      launchConfetti();
-
       const currentRating = parseFloat(document.getElementById('currentRating').value);
       const currentVolume = parseInt(document.getElementById('currentVolume').value, 10);
       const targetRating = parseFloat(document.getElementById('targetRating').value);
       const monthlyReviews = parseInt(document.getElementById('monthlyReviews').value, 10);
       const resultsDiv = document.getElementById('results');
+      const guesttouchBox = document.getElementById('guesttouchBox');
 
-      // Clear previous results
+      // Clear previous results and remove highlighting from GuestTouch
       resultsDiv.innerHTML = '';
+      resultsDiv.classList.remove('highlighted');
+      guesttouchBox.classList.remove('highlighted');
 
-      // Validate input
+      // Validate input: Ensure required fields are present and that target is greater than current score
       if (isNaN(currentRating) || isNaN(currentVolume) || isNaN(targetRating)) {
         resultsDiv.innerHTML = '<p>Please fill in your current score, review count, and target score.</p>';
         return;
@@ -262,6 +268,9 @@
         resultsDiv.innerHTML = '<p>Your target score must be higher than your current score and no more than 10.</p>';
         return;
       }
+
+      // All validations passed: Trigger confetti
+      launchConfetti();
 
       // Function to calculate additional reviews needed
       function calcAdditionalReviews(newReviewScore) {
@@ -310,9 +319,10 @@
       html += '</div>';
 
       resultsDiv.innerHTML = html;
-      
-      // When results are produced, highlight the GuestTouch CTA section
-      document.getElementById('guesttouchBox').classList.add('highlighted');
+      // Highlight the results box
+      resultsDiv.classList.add('highlighted');
+      // Highlight the GuestTouch CTA box
+      guesttouchBox.classList.add('highlighted');
     });
   </script>
 </body>
