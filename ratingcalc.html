@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guest Review Score Estimator</title>
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+  <style>
+    /* Reset defaults */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.5;
+      padding: 1rem;
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Main container holds both the calculator and GuestTouch pitch side by side on larger screens */
+    .main-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    /* Calculator styles */
+    .calculator {
+      background: #111;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 400px;
+      animation: slideIn 1s ease-out;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    p.subtitle {
+      text-align: center;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      color: #ccc;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      background-color: #333; /* Greyish background */
+      color: #fff;            /* Pure white text */
+    }
+    button {
+      display: inline-block;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #0038e0;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #002bb8;
+      transform: scale(1.02);
+    }
+    .result {
+      margin-top: 1.5rem;
+      background: #222;
+      padding: 1rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      animation: fadeIn 0.8s ease-in;
+    }
+    .scenario {
+      margin-bottom: 1rem;
+    }
+    .disclaimer {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    /* GuestTouch pitch styles */
+    .guesttouch {
+      background: #111;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      /* No pulse effect initially; highlight added on results */
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin-top: 1rem;
+    }
+    /* When results are produced, the guesttouch container gets highlighted */
+    .guesttouch.highlighted {
+      background: #1a1a1a;
+      box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1);
+    }
+    .guesttouch p {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: #ccc;
+    }
+    /* CTA button initially in non-focused state */
+    .cta-button {
+      display: inline-block;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #555; /* muted color initially */
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+      text-align: center;
+      text-decoration: none;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    .cta-button:hover {
+      transform: scale(1.02);
+    }
+    /* When guesttouch container is highlighted, update CTA button */
+    .guesttouch.highlighted .cta-button {
+      background-color: #0038e0;
+    }
+    /* Mobile friendly adjustments */
+    @media (max-width: 480px) {
+      .main-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .calculator, .guesttouch {
+        width: 100%;
+        max-width: 100%;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Calculator Section -->
+    <div class="calculator">
+      <h1>Guest Review Score Estimator</h1>
+      <p class="subtitle">
+        Estimate the extra reviews and timeline needed to improve your guest score.
+      </p>
+
+      <label for="currentRating">Current Guest Score (1–10)</label>
+      <input type="number" step="0.1" id="currentRating" placeholder="e.g. 7.8" />
+
+      <label for="currentVolume">Current Number of Reviews</label>
+      <input type="number" id="currentVolume" placeholder="e.g. 250" />
+
+      <label for="targetRating">Target Guest Score</label>
+      <input type="number" step="0.1" id="targetRating" placeholder="e.g. 8.5" />
+
+      <label for="monthlyReviews">Average New Reviews per Month (optional)</label>
+      <input type="number" id="monthlyReviews" placeholder="e.g. 10" />
+
+      <button id="calculateBtn">Calculate Scenarios</button>
+
+      <div id="results" class="result"></div>
+      <div class="disclaimer">
+        * New reviews are counted with full weight based on recent feedback.
+        <a href="https://www.guesttouch.com/blog/how-to-pass-your-next-brand-qa-inspection-a-simple-framework-for-hoteliers" target="_blank" style="color: #0038e0; text-decoration: none;">Explore how 2025 rules work.</a>
+      </div>
+    </div>
+
+    <!-- GuestTouch Pitch Section -->
+    <div class="guesttouch" id="guesttouchBox">
+      <p>
+        With GuestTouch SmartReview collection, you can easily automate review collection from your Booking.com guests.
+      </p>
+      <a class="cta-button" href="https://www.guesttouch.com/demo" target="_blank">
+        Try it out, Book a Demo
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Function to trigger confetti burst
+    function launchConfetti() {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+
+    /*
+      Formula: (currentRating * currentVolume + newReviewScore * n) / (currentVolume + n) = targetRating
+      Solve for n:
+        n = (targetRating - currentRating) * currentVolume / (newReviewScore - targetRating)
+      
+      Scenarios:
+        - Miracle Mode: New reviews are 10
+        - Optimistic Mode: New reviews are 9.5
+        - Realistic Mode: New reviews are 9
+    */
+    document.getElementById('calculateBtn').addEventListener('click', function() {
+      // Trigger confetti effect
+      launchConfetti();
+
+      const currentRating = parseFloat(document.getElementById('currentRating').value);
+      const currentVolume = parseInt(document.getElementById('currentVolume').value, 10);
+      const targetRating = parseFloat(document.getElementById('targetRating').value);
+      const monthlyReviews = parseInt(document.getElementById('monthlyReviews').value, 10);
+      const resultsDiv = document.getElementById('results');
+
+      // Clear previous results
+      resultsDiv.innerHTML = '';
+
+      // Validate input
+      if (isNaN(currentRating) || isNaN(currentVolume) || isNaN(targetRating)) {
+        resultsDiv.innerHTML = '<p>Please fill in your current score, review count, and target score.</p>';
+        return;
+      }
+      if (currentRating <= 0 || currentRating > 10) {
+        resultsDiv.innerHTML = '<p>Your current score should be between 1 and 10.</p>';
+        return;
+      }
+      if (targetRating <= currentRating || targetRating > 10) {
+        resultsDiv.innerHTML = '<p>Your target score must be higher than your current score and no more than 10.</p>';
+        return;
+      }
+
+      // Function to calculate additional reviews needed
+      function calcAdditionalReviews(newReviewScore) {
+        if (newReviewScore <= targetRating) return Infinity;
+        return Math.ceil((targetRating - currentRating) * currentVolume / (newReviewScore - targetRating));
+      }
+
+      // Calculate additional reviews for each scenario
+      const reviewsNeeded10 = calcAdditionalReviews(10);
+      const reviewsNeeded95 = calcAdditionalReviews(9.5);
+      const reviewsNeeded9 = calcAdditionalReviews(9);
+
+      // Helper to add timeline information if monthly reviews are provided
+      function timelineText(reviewsNeeded) {
+        if (isNaN(monthlyReviews) || monthlyReviews <= 0 || reviewsNeeded === Infinity) {
+          return '';
+        }
+        const monthsNeeded = Math.ceil(reviewsNeeded / monthlyReviews);
+        return `<br><em>(About ${monthsNeeded} month${monthsNeeded > 1 ? 's' : ''} at ${monthlyReviews} review${monthlyReviews > 1 ? 's' : ''} per month)</em>`;
+      }
+
+      // Build result output with a subtle fade-in effect
+      let html = '';
+      html += '<div class="scenario"><strong>Miracle Mode (10‑score reviews):</strong><br>';
+      if (reviewsNeeded10 === Infinity) {
+        html += 'Even if every new review was a 10, it wouldn’t be enough. Consider focusing on small improvements.';
+      } else {
+        html += `You need <strong>${reviewsNeeded10}</strong> extra 10‑score review(s) to reach ${targetRating}.${timelineText(reviewsNeeded10)}`;
+      }
+      html += '</div>';
+
+      html += '<div class="scenario"><strong>Optimistic Mode (9.5‑score reviews):</strong><br>';
+      if (reviewsNeeded95 === Infinity) {
+        html += 'A series of 9.5 reviews won’t push your score high enough. Think about ways to improve even more.';
+      } else {
+        html += `You need <strong>${reviewsNeeded95}</strong> extra 9.5‑score review(s) to reach ${targetRating}.${timelineText(reviewsNeeded95)}`;
+      }
+      html += '</div>';
+
+      html += '<div class="scenario"><strong>Realistic Mode (9‑score reviews):</strong><br>';
+      if (reviewsNeeded9 === Infinity) {
+        html += 'Even steady 9 reviews aren’t enough. It might be time to reexamine your guest experience.';
+      } else {
+        html += `You need <strong>${reviewsNeeded9}</strong> extra 9‑score review(s) to reach ${targetRating}.${timelineText(reviewsNeeded9)}`;
+      }
+      html += '</div>';
+
+      resultsDiv.innerHTML = html;
+      
+      // When results are produced, highlight the GuestTouch CTA section
+      document.getElementById('guesttouchBox').classList.add('highlighted');
+    });
+  </script>
+</body>
+</html>
